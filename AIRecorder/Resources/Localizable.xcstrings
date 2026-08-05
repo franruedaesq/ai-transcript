@@ -1,0 +1,168 @@
+{
+  "sourceLanguage" : "es",
+  "strings" : {
+    "·" : {
+
+    },
+    "Ajustes" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Settings"
+          }
+        }
+      }
+    },
+    "Apple Translation no descarga idiomas ni traduce dentro del Simulator." : {
+
+    },
+    "Apple Translation no traduce dentro del Simulator." : {
+
+    },
+    "Audio y transcripciones se guardan localmente. La app no configura servicios cloud." : {
+
+    },
+    "Comprobando idiomas…" : {
+
+    },
+    "Detener" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Stop"
+          }
+        }
+      }
+    },
+    "El modelo está listo" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Model ready"
+          }
+        }
+      }
+    },
+    "El modelo se descarga la primera vez y permanece únicamente en este dispositivo." : {
+
+    },
+    "Graba o importa un audio para comenzar." : {
+
+    },
+    "Grabaciones" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Recordings"
+          }
+        }
+      }
+    },
+    "Grabando" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Recording"
+          }
+        }
+      }
+    },
+    "Importar" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Import"
+          }
+        }
+      }
+    },
+    "iOS descargará los idiomas necesarios. Los paquetes se comparten con la app Traducir y el texto se procesa en este dispositivo." : {
+
+    },
+    "La descarga ya terminó" : {
+
+    },
+    "La traducción aparecerá aquí…" : {
+
+    },
+    "Los archivos ya están descargados. Core ML está cargando el modelo para que la primera grabación comience más rápido." : {
+
+    },
+    "Nemotron 3.5 ASR Streaming 0.6B · NVIDIA" : {
+
+    },
+    "No se pudo determinar el idioma original de esta grabación." : {
+
+    },
+    "Para transcribir sin enviar tus audios fuera del dispositivo, AI Recorder necesita descargar Nemotron 3.5 una sola vez." : {
+
+    },
+    "Pausar" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pause"
+          }
+        }
+      }
+    },
+    "Preparar subtítulos traducidos" : {
+
+    },
+    "Preparar transcripción local" : {
+
+    },
+    "Puedes traducir esta transcripción completamente en el dispositivo." : {
+
+    },
+    "Reanudar" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Resume"
+          }
+        }
+      }
+    },
+    "También se eliminarán el audio y la transcripción." : {
+
+    },
+    "También se eliminarán el audio, la transcripción y la traducción." : {
+
+    },
+    "Traducción provisional…" : {
+
+    },
+    "Traduciendo la grabación…" : {
+
+    },
+    "Transcripción local" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "On-device transcription"
+          }
+        }
+      }
+    }
+  },
+  "version" : "1.0"
+}

@@ -1,0 +1,7 @@
+DerivedData/
+.DS_Store
+*.xcuserstate
+xcuserdata/
+.swiftpm/
+.build/
+AIRecorder.xcodeproj/project.xcworkspace/xcuserdata/
