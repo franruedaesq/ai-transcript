@@ -5,9 +5,19 @@ struct SettingsView: View {
     @Environment(\.dismiss) private var dismiss
     @State private var translationAvailability = TranslationAvailabilityController()
     @State private var isShowingTranslationSetup = false
+    @AppStorage("appUiLanguage") private var appUiLanguage: String = "system"
 
     var body: some View {
         Form {
+            Section("Interfaz") {
+                Picker("Idioma de la App", selection: $appUiLanguage) {
+                    Text("Sistema").tag("system")
+                    Text("Español").tag("es")
+                    Text("English").tag("en")
+                    Text("Deutsch").tag("de")
+                }
+            }
+
             Section("Transcripción") {
                 Picker("Motor", selection: Bindable(settings).engine) {
                     ForEach(TranscriptionEngineKind.allCases) { Text($0.displayName).tag($0) }
@@ -65,7 +75,7 @@ struct SettingsView: View {
     }
 
     private var availableLanguages: [TranscriptionLanguage] {
-        settings.engine == .nemotron ? TranscriptionLanguage.allCases : [.spanish, .english]
+        settings.engine == .nemotron ? TranscriptionLanguage.allCases : [.spanish, .english, .german]
     }
 
     private var translationStatusText: String {

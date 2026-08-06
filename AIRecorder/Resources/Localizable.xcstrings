@@ -1,12 +1,61 @@
 {
   "sourceLanguage" : "es",
   "strings" : {
+    " · %lld" : {
+
+    },
     "·" : {
 
     },
-    "Ajustes" : {
-      "extractionState" : "stale",
+    "Aceptar" : {
+      "extractionState" : "manual",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "OK"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "OK"
+          }
+        }
+      }
+    },
+    "Acerca de" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Über"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "About"
+          }
+        }
+      }
+    },
+    "Activar traducción" : {
+
+    },
+    "Activar traducción a %@" : {
+
+    },
+    "Ajustes" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Einstellungen"
+          }
+        },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
@@ -15,49 +64,189 @@
         }
       }
     },
-    "Apple Translation no descarga idiomas ni traduce dentro del Simulator." : {
-
-    },
-    "Apple Translation no traduce dentro del Simulator." : {
-
-    },
     "Audio y transcripciones se guardan localmente. La app no configura servicios cloud." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Audio und Transkriptionen werden lokal gespeichert. Die App nutzt keine Cloud-Dienste."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Audio and transcripts are saved locally. The app does not configure cloud services."
+          }
+        }
+      }
+    },
+    "Cambiar idioma de traducción" : {
+
+    },
+    "Cancelar" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Abbrechen"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cancel"
+          }
+        }
+      }
+    },
+    "Cerrar" : {
 
     },
     "Comprobando idiomas…" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sprachen werden überprüft…"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Checking languages…"
+          }
+        }
+      }
+    },
+    "Contenido" : {
+
+    },
+    "Continúa sin descargar Nemotron" : {
+
+    },
+    "Copiar traducción" : {
+
+    },
+    "Copiar transcripción" : {
+
+    },
+    "Desactivar traducción" : {
+
+    },
+    "Desactivar traducción a %@" : {
+
+    },
+    "Descarga y prepara Nemotron para transcribir audios localmente" : {
+
+    },
+    "Descargar idiomas" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sprachen herunterladen"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Download Languages"
+          }
+        }
+      }
+    },
+    "Descargar modelo" : {
 
     },
     "Detener" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Stop"
-          }
-        }
-      }
+
     },
-    "El modelo está listo" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Model ready"
-          }
-        }
-      }
+    "Deutsch" : {
+
+    },
+    "El modelo queda guardado en este dispositivo" : {
+
     },
     "El modelo se descarga la primera vez y permanece únicamente en este dispositivo." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Das Modell wird beim ersten Mal heruntergeladen und verbleibt ausschließlich auf diesem Gerät."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The model is downloaded the first time and remains solely on this device."
+          }
+        }
+      }
+    },
+    "Eliminar" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Löschen"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Delete"
+          }
+        }
+      }
+    },
+    "Eliminar grabación" : {
+
+    },
+    "En pausa" : {
+
+    },
+    "English" : {
+
+    },
+    "Error" : {
+
+    },
+    "Español" : {
+
+    },
+    "Español, inglés y alemán con detección automática" : {
+
+    },
+    "Este par de idiomas no es compatible" : {
+
+    },
+    "Exportar traducción" : {
+
+    },
+    "Exportar transcripción" : {
 
     },
     "Graba o importa un audio para comenzar." : {
 
     },
+    "Grabación no encontrada" : {
+
+    },
     "Grabaciones" : {
-      "extractionState" : "stale",
+      "extractionState" : "manual",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aufnahmen"
+          }
+        },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
@@ -67,28 +256,118 @@
       }
     },
     "Grabando" : {
-      "extractionState" : "stale",
+
+    },
+    "Guardar o compartir audio" : {
+
+    },
+    "Idioma" : {
+      "extractionState" : "manual",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sprache"
+          }
+        },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Recording"
+            "value" : "Language"
           }
         }
       }
     },
-    "Importar" : {
-      "extractionState" : "stale",
+    "Idioma de entrada" : {
+      "extractionState" : "manual",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Eingabesprache"
+          }
+        },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Import"
+            "value" : "Input Language"
           }
         }
       }
+    },
+    "Idioma de la App" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "App-Sprache"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "App Language"
+          }
+        }
+      }
+    },
+    "Idioma desconocido" : {
+
+    },
+    "Idiomas" : {
+
+    },
+    "Idiomas instalados y listos" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sprachen installiert und bereit"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Languages installed and ready"
+          }
+        }
+      }
+    },
+    "Importar audio" : {
+
+    },
+    "Iniciar grabación · idioma de entrada %@" : {
+
+    },
+    "Interfaz" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Schnittstelle"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Interface"
+          }
+        }
+      }
+    },
+    "Interrumpida" : {
+
     },
     "iOS descargará los idiomas necesarios. Los paquetes se comparten con la app Traducir y el texto se procesa en este dispositivo." : {
+
+    },
+    "iOS necesita descargar estos idiomas" : {
+
+    },
+    "Ir al texto más reciente" : {
 
     },
     "La descarga ya terminó" : {
@@ -97,28 +376,137 @@
     "La traducción aparecerá aquí…" : {
 
     },
+    "Licencia OpenMDW 1.1" : {
+
+    },
+    "Listo" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fertig"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Done"
+          }
+        }
+      }
+    },
     "Los archivos ya están descargados. Core ML está cargando el modelo para que la primera grabación comience más rápido." : {
 
+    },
+    "Los idiomas están listos" : {
+
+    },
+    "Mantén pulsado para cambiar el idioma de entrada" : {
+
+    },
+    "Mantén pulsado para cambiar el idioma de salida. %@" : {
+
+    },
+    "Más acciones para %@" : {
+
+    },
+    "Modelo Nemotron" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nemotron-Modell"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nemotron Model"
+          }
+        }
+      }
+    },
+    "Modo de traducción" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Übersetzungsmodus"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Translation Mode"
+          }
+        }
+      }
+    },
+    "Motor" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Engine"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Engine"
+          }
+        }
+      }
     },
     "Nemotron 3.5 ASR Streaming 0.6B · NVIDIA" : {
 
     },
+    "Nivel de audio" : {
+
+    },
+    "No se pudieron preparar los idiomas" : {
+
+    },
+    "No se pudo completar" : {
+
+    },
+    "No se pudo descargar" : {
+
+    },
     "No se pudo determinar el idioma original de esta grabación." : {
+
+    },
+    "No se pudo exportar" : {
+
+    },
+    "No se pudo traducir" : {
+
+    },
+    "Original" : {
 
     },
     "Para transcribir sin enviar tus audios fuera del dispositivo, AI Recorder necesita descargar Nemotron 3.5 una sola vez." : {
 
     },
     "Pausar" : {
-      "extractionState" : "stale",
+
+    },
+    "Preparando idioma %lld de %lld…" : {
       "localizations" : {
-        "en" : {
+        "es" : {
           "stringUnit" : {
-            "state" : "translated",
-            "value" : "Pause"
+            "state" : "new",
+            "value" : "Preparando idioma %1$lld de %2$lld…"
           }
         }
       }
+    },
+    "Preparando…" : {
+
     },
     "Preparar subtítulos traducidos" : {
 
@@ -126,24 +514,117 @@
     "Preparar transcripción local" : {
 
     },
+    "Procesando" : {
+
+    },
     "Puedes traducir esta transcripción completamente en el dispositivo." : {
 
     },
     "Reanudar" : {
-      "extractionState" : "stale",
+
+    },
+    "Reintentar" : {
+
+    },
+    "Reintentar bloques pendientes" : {
+
+    },
+    "Revisando…" : {
+
+    },
+    "Se requiere conexión durante la descarga" : {
+
+    },
+    "Se requiere descargar los idiomas" : {
+      "extractionState" : "manual",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sprachen müssen heruntergeladen werden"
+          }
+        },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Resume"
+            "value" : "Languages need to be downloaded"
           }
         }
       }
+    },
+    "Sin grabaciones" : {
+
+    },
+    "Sin traducción" : {
+
+    },
+    "Sistema" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "System"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "System"
+          }
+        }
+      }
+    },
+    "Subtítulos traducidos" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Übersetzte Untertitel"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Translated Subtitles"
+          }
+        }
+      }
+    },
+    "Tamaño del texto" : {
+
     },
     "También se eliminarán el audio y la transcripción." : {
 
     },
     "También se eliminarán el audio, la transcripción y la traducción." : {
+
+    },
+    "Todas" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Alle"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "All"
+          }
+        }
+      }
+    },
+    "Traducción" : {
+
+    },
+    "Traducción final" : {
+
+    },
+    "Traducción provisional" : {
 
     },
     "Traducción provisional…" : {
@@ -152,13 +633,85 @@
     "Traduciendo la grabación…" : {
 
     },
-    "Transcripción local" : {
-      "extractionState" : "stale",
+    "Traduciendo…" : {
+
+    },
+    "Traducir a" : {
+      "extractionState" : "manual",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Übersetzen in"
+          }
+        },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "On-device transcription"
+            "value" : "Translate to"
+          }
+        }
+      }
+    },
+    "Traducir durante la grabación" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Während der Aufnahme übersetzen"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Translate during recording"
+          }
+        }
+      }
+    },
+    "Traducir esta grabación" : {
+
+    },
+    "Traducir grabación" : {
+
+    },
+    "Transcripción" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Transkription"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Transcription"
+          }
+        }
+      }
+    },
+    "Transcripción local · El modelo está listo" : {
+
+    },
+    "Usar Apple Speech Recognition" : {
+
+    },
+    "Variante" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Variante"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Variant"
           }
         }
       }

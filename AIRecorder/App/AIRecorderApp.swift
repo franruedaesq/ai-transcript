@@ -6,6 +6,7 @@ struct AIRecorderApp: App {
     private let container: ModelContainer
     @State private var settings = AppSettings()
     @State private var session = RecordingSessionController()
+    @AppStorage("appUiLanguage") private var appUiLanguage: String = "system"
     @Environment(\.scenePhase) private var scenePhase
 
     init() {
@@ -28,6 +29,8 @@ struct AIRecorderApp: App {
         WindowGroup {
             AppRootView(settings: settings, session: session)
                 .modelContainer(container)
+                .environment(\.locale, appUiLanguage == "system" ? Locale.current : Locale(identifier: appUiLanguage))
+                .id(appUiLanguage)
                 .onChange(of: scenePhase) { _, phase in
                     if phase != .active { Task { await session.handleBackgroundTransition() } }
                 }

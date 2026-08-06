@@ -345,10 +345,36 @@ final class RecordingSessionController {
 
     private func handleFinalizedCue(_ cue: TranscriptionCueValue) {
         guard sessionTranslationEnabled else { return }
-        acceptFinalizedPhrase(cue.text)
+        let finalizedWords = Self.words(in: cue.text)
+        let stableText = (liveTranslationBlocks.map(\.sourceText) + activeSourcePhrases)
+            .joined(separator: " ")
+        let stableWords = Self.words(in: stableText)
+        let overlap = Self.suffixPrefixOverlap(stableWords, finalizedWords)
+        if overlap < finalizedWords.count {
+            acceptFinalizedPhrase(finalizedWords.dropFirst(overlap).joined(separator: " "))
+        }
         liveProvisional = ""
         detectLanguageFromStableTextIfNeeded()
         refreshActiveTranslation()
+    }
+
+    private static func words(in text: String) -> [String] {
+        text.split(whereSeparator: \.isWhitespace).map(String.init)
+    }
+
+    private static func suffixPrefixOverlap(_ stable: [String], _ finalized: [String]) -> Int {
+        let maximum = min(stable.count, finalized.count)
+        guard maximum > 0 else { return 0 }
+        for length in stride(from: maximum, through: 1, by: -1) {
+            let suffix = stable.suffix(length).map(normalizedWord)
+            let prefix = finalized.prefix(length).map(normalizedWord)
+            if suffix.elementsEqual(prefix) { return length }
+        }
+        return 0
+    }
+
+    private static func normalizedWord(_ word: String) -> String {
+        word.trimmingCharacters(in: .punctuationCharacters).lowercased()
     }
 
     private func acceptFinalizedPhrase(_ phrase: String) {

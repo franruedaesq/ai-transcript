@@ -80,25 +80,29 @@ final class TranslationAvailabilityController {
     var state: TranslationAvailabilityState = .checking
     var supportedTargets: [TranslationLanguageOption] = [
         .init(code: "en", displayName: TranslationPolicy.displayName(for: "en")),
-        .init(code: "es", displayName: TranslationPolicy.displayName(for: "es"))
+        .init(code: "es", displayName: TranslationPolicy.displayName(for: "es")),
+        .init(code: "de", displayName: TranslationPolicy.displayName(for: "de"))
     ]
 
     func refresh(settings: AppSettings) async {
+        let limitedTargetCodes = ["es", "en", "de"]
+        if !limitedTargetCodes.contains(TranslationPolicy.normalizedCode(settings.translationTargetLanguage)) {
+            settings.translationTargetLanguage = AppSettings.defaultTranslationTarget(for: settings.language)
+        }
         #if targetEnvironment(simulator)
         state = .unavailable("La traducción de Apple requiere un iPhone o iPad real.")
         #elseif canImport(Translation)
         state = .checking
         let availability = LanguageAvailability()
         let languages = await availability.supportedLanguages
-        supportedTargets = languages.compactMap { language in
+        let supportedCodes = Set(languages.compactMap { language -> String? in
             guard let code = language.languageCode?.identifier else { return nil }
-            return TranslationLanguageOption(
-                code: code,
-                displayName: TranslationPolicy.displayName(for: code)
-            )
+            return TranslationPolicy.normalizedCode(code)
+        })
+        supportedTargets = limitedTargetCodes.compactMap { code in
+            guard supportedCodes.contains(code) else { return nil }
+            return TranslationLanguageOption(code: code, displayName: TranslationPolicy.displayName(for: code))
         }
-        .uniqued(by: \.code)
-        .sorted { $0.displayName.localizedStandardCompare($1.displayName) == .orderedAscending }
 
         let pairs = TranslationPolicy.requiredPairs(
             spokenLanguage: settings.language,

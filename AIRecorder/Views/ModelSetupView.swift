@@ -80,6 +80,14 @@ struct ModelSetupView: View {
             .buttonStyle(.borderedProminent)
             .disabled(isDownloading)
             .accessibilityHint("Descarga y prepara Nemotron para transcribir audios localmente")
+
+            Button("Usar Apple Speech Recognition") {
+                settings.engine = .appleSpeech
+                completed()
+            }
+            .buttonStyle(.bordered)
+            .disabled(isDownloading)
+            .accessibilityHint("Continúa sin descargar Nemotron")
         }
         .padding(.horizontal, 28)
         .padding(.vertical, 20)

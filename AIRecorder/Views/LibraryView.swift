@@ -12,6 +12,7 @@ struct LibraryView: View {
     @State private var isShowingModelSetup = false
     @State private var isImporting = false
     @State private var recordingIDToDelete: UUID?
+    @AppStorage("appUiLanguage") private var appUiLanguage: String = "system"
     @State private var translationAvailability = TranslationAvailabilityController()
     @State private var exportCoordinator = RecordingExportCoordinator()
     @State private var translationMessage: String?
@@ -63,7 +64,7 @@ struct LibraryView: View {
                 }
             } header: {
                 HStack {
-                    Label("Todas · \(recordings.count)", systemImage: "folder")
+                    Label(title: { Text("Todas") + Text(" · \(recordings.count)") }, icon: { Image(systemName: "folder") })
                         .font(.subheadline.weight(.medium))
                         .textCase(nil)
                     Spacer()
@@ -82,11 +83,14 @@ struct LibraryView: View {
         .safeAreaInset(edge: .bottom) {
             FloatingCaptureBar(
                 isImporting: $isImporting,
+                engine: settings.engine,
+                selectedInputLanguage: settings.language,
                 translationEnabled: settings.translationEnabled,
                 translationState: translationAvailability.state,
                 translationTargets: translationAvailability.supportedTargets,
                 selectedTranslationTarget: settings.translationTargetLanguage,
                 record: { Task { await startRecording() } },
+                selectInputLanguage: { settings.language = $0 },
                 toggleTranslation: { Task { await toggleTranslation() } },
                 selectTranslationTarget: { code in
                     Task { await selectTranslationTarget(code) }
@@ -95,11 +99,14 @@ struct LibraryView: View {
         }
         .sheet(item: $presentedSheet) { sheet in
             switch sheet {
-            case .settings: NavigationStack { SettingsView(settings: settings) }
+            case .settings: 
+                NavigationStack { SettingsView(settings: settings) }
+                    .environment(\.locale, appUiLanguage == "system" ? Locale.current : Locale(identifier: appUiLanguage))
             case .translationSetup:
                 TranslationSetupView(settings: settings, availability: translationAvailability) {
                     Task { await translationAvailability.refresh(settings: settings) }
                 }
+                .environment(\.locale, appUiLanguage == "system" ? Locale.current : Locale(identifier: appUiLanguage))
             }
         }
         .sheet(item: Bindable(exportCoordinator).sharePayload) { payload in
@@ -260,11 +267,14 @@ private struct ModelWarmupStatus: View {
 
 private struct FloatingCaptureBar: View {
     @Binding var isImporting: Bool
+    let engine: TranscriptionEngineKind
+    let selectedInputLanguage: TranscriptionLanguage
     let translationEnabled: Bool
     let translationState: TranslationAvailabilityState
     let translationTargets: [TranslationLanguageOption]
     let selectedTranslationTarget: String
     let record: () -> Void
+    let selectInputLanguage: (TranscriptionLanguage) -> Void
     let toggleTranslation: () -> Void
     let selectTranslationTarget: (String) -> Void
 
@@ -291,8 +301,46 @@ private struct FloatingCaptureBar: View {
                     .background(.red, in: Circle())
                     .overlay(Circle().stroke(.white.opacity(0.9), lineWidth: 4).padding(6))
                     .shadow(color: .red.opacity(0.24), radius: 12, y: 6)
+                    .overlay(alignment: .topTrailing) {
+                        Menu {
+                            Section("Idioma de entrada") {
+                                ForEach(inputLanguages) { language in
+                                    Button {
+                                        selectInputLanguage(language)
+                                    } label: {
+                                        if language == selectedInputLanguage {
+                                            Label(language.displayName, systemImage: "checkmark")
+                                        } else {
+                                            Text(language.displayName)
+                                        }
+                                    }
+                                }
+                            }
+                        } label: {
+                            LanguageBadge(text: selectedInputLanguage.badgeCode, tint: .red)
+                                // Ampliamos un poco el área de toque para que no haya accidentes
+                                .contentShape(Rectangle())
+                        }
+                        .offset(x: 6, y: -3)
+                    }
             }
-            .accessibilityLabel("Iniciar grabación")
+            .accessibilityLabel("Iniciar grabación · idioma de entrada \(selectedInputLanguage.displayName)")
+            .accessibilityHint("Mantén pulsado para cambiar el idioma de entrada")
+            .contextMenu {
+                Section("Idioma de entrada") {
+                    ForEach(inputLanguages) { language in
+                        Button {
+                            selectInputLanguage(language)
+                        } label: {
+                            if language == selectedInputLanguage {
+                                Label(language.displayName, systemImage: "checkmark")
+                            } else {
+                                Text(language.displayName)
+                            }
+                        }
+                    }
+                }
+            }
 
             Button(action: toggleTranslation) {
                 Image(systemName: translationIcon)
@@ -300,18 +348,45 @@ private struct FloatingCaptureBar: View {
                     .foregroundStyle(translationColor)
                     .frame(width: 58, height: 58)
                     .overlay(alignment: .topTrailing) {
-                        if translationEnabled {
-                            Image(systemName: "checkmark.circle.fill")
-                                .font(.caption)
-                                .foregroundStyle(.blue)
-                                .background(.background, in: Circle())
-                                .offset(x: 2, y: -2)
+                        Menu {
+                            Section("Modo de traducción") {
+                                Button(action: toggleTranslation) {
+                                    Label(
+                                        translationEnabled ? "Desactivar traducción" : "Activar traducción",
+                                        systemImage: translationEnabled ? "translate" : "translate"
+                                    )
+                                }
+                                Menu("Traducir a") {
+                                    ForEach(translationTargets) { language in
+                                        Button {
+                                            selectTranslationTarget(language.code)
+                                        } label: {
+                                            if TranslationPolicy.sameLanguage(language.code, selectedTranslationTarget) {
+                                                Label(language.displayName, systemImage: "checkmark")
+                                            } else {
+                                                Text(language.displayName)
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        } label: {
+                            LanguageBadge(
+                                text: TranslationPolicy.normalizedCode(selectedTranslationTarget).uppercased(),
+                                tint: translationEnabled ? .blue : .secondary
+                            )
+                            .contentShape(Rectangle())
                         }
+                        .offset(x: 4, y: -3)
                     }
             }
             .buttonStyle(.recorderGlass)
-            .accessibilityLabel(translationEnabled ? "Desactivar subtítulos traducidos" : "Activar subtítulos traducidos")
-            .accessibilityHint(translationState.explanation)
+            .accessibilityLabel(
+                translationEnabled
+                    ? "Desactivar traducción a \(TranslationPolicy.displayName(for: selectedTranslationTarget))"
+                    : "Activar traducción a \(TranslationPolicy.displayName(for: selectedTranslationTarget))"
+            )
+            .accessibilityHint("Mantén pulsado para cambiar el idioma de salida. \(translationState.explanation)")
             .contextMenu {
                 Section("Modo de traducción") {
                     Button(action: toggleTranslation) {
@@ -353,6 +428,37 @@ private struct FloatingCaptureBar: View {
         if case .needsDownload = translationState { return .orange }
         if case .ready = translationState { return .primary }
         return .secondary
+    }
+
+    private var inputLanguages: [TranscriptionLanguage] {
+        engine == .nemotron ? TranscriptionLanguage.allCases : [.spanish, .english, .german]
+    }
+}
+
+private struct LanguageBadge: View {
+    let text: String
+    let tint: Color
+
+    var body: some View {
+        Text(text)
+            .font(.caption2.weight(.bold).monospaced())
+            .foregroundStyle(.white)
+            .padding(.horizontal, 5)
+            .padding(.vertical, 3)
+            .background(tint, in: Capsule())
+            .overlay(Capsule().stroke(.background, lineWidth: 2))
+            .accessibilityHidden(true)
+    }
+}
+
+private extension TranscriptionLanguage {
+    var badgeCode: String {
+        switch self {
+        case .automatic: "AUTO"
+        case .spanish: "ES"
+        case .english: "EN"
+        case .german: "DE"
+        }
     }
 }
 
