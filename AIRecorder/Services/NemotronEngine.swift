@@ -27,7 +27,7 @@ actor NemotronEngine: StreamingTranscriptionEngine {
         }
         do {
             continuation.yield(.modelState(.checking))
-            continuation.yield(.modelProgress(0, "Comprobando acceso a Nemotron…"))
+            continuation.yield(.modelProgress(0, AppLocalization.string("Comprobando acceso a Nemotron…")))
             if !Self.isLatinModelCached {
                 try await Self.verifyRepositoryAccess()
             }
@@ -42,22 +42,22 @@ actor NemotronEngine: StreamingTranscriptionEngine {
                 switch progress.phase {
                 case .listing:
                     continuation.yield(.modelState(.checking))
-                    continuation.yield(.modelProgress(0, "Consultando los archivos del modelo…"))
+                    continuation.yield(.modelProgress(0, AppLocalization.string("Consultando los archivos del modelo…")))
                 case .downloading(let completed, let total):
                     continuation.yield(.modelState(.downloading(progress.fractionCompleted)))
                     continuation.yield(.modelProgress(
                         progress.fractionCompleted,
-                        "Descargando archivos · \(completed) de \(total)"
+                        AppLocalization.string("Descargando archivos · \(completed) de \(total)")
                     ))
                 case .compiling(let modelName):
                     continuation.yield(.modelProgress(
                         progress.fractionCompleted,
-                        "Preparando \(modelName)…"
+                        AppLocalization.string("Preparando \(modelName)…")
                     ))
                 }
             }
             continuation.yield(.modelState(.loading))
-            continuation.yield(.modelProgress(1, "Cargando Nemotron en memoria…"))
+            continuation.yield(.modelProgress(1, AppLocalization.string("Cargando Nemotron en memoria…")))
             let shared = try await StreamingNemotronMultilingualAsrManager.preloadShared(
                 from: modelDirectory,
                 configuration: configuration
@@ -127,21 +127,21 @@ actor NemotronEngine: StreamingTranscriptionEngine {
     private static func friendlyModelError(_ error: Error) -> String {
         let text = error.localizedDescription
         if text.contains("401") || text.contains("403") {
-            return "No se pudo acceder a Nemotron. Verifica que tu cuenta tenga acceso y que HF_TOKEN esté configurado en el esquema de Xcode."
+            return AppLocalization.string("No se pudo acceder a Nemotron. Verifica que tu cuenta tenga acceso y que HF_TOKEN esté configurado en el esquema de Xcode.")
         }
         if text.localizedCaseInsensitiveContains("space") {
-            return "No hay espacio suficiente para descargar Nemotron."
+            return AppLocalization.string("No hay espacio suficiente para descargar Nemotron.")
         }
         if let urlError = error as? URLError {
             switch urlError.code {
             case .notConnectedToInternet:
-                return "No hay conexión a internet. Conéctate y vuelve a intentarlo."
+                return AppLocalization.string("No hay conexión a internet. Conéctate y vuelve a intentarlo.")
             case .timedOut:
-                return "Hugging Face no respondió a tiempo. Comprueba la conexión y vuelve a intentarlo."
+                return AppLocalization.string("Hugging Face no respondió a tiempo. Comprueba la conexión y vuelve a intentarlo.")
             default: break
             }
         }
-        return "No se pudo preparar Nemotron: \(text)"
+        return AppLocalization.string("No se pudo preparar Nemotron: \(text)")
     }
 
     private static func verifyRepositoryAccess() async throws {
@@ -156,7 +156,7 @@ actor NemotronEngine: StreamingTranscriptionEngine {
             throw NSError(
                 domain: "HuggingFace",
                 code: http.statusCode,
-                userInfo: [NSLocalizedDescriptionKey: "Hugging Face respondió HTTP \(http.statusCode)."]
+                userInfo: [NSLocalizedDescriptionKey: AppLocalization.string("Hugging Face respondió HTTP \(http.statusCode).")]
             )
         }
     }

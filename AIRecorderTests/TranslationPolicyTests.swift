@@ -39,7 +39,7 @@ final class TranslationPolicyTests: XCTestCase {
         )
     }
 
-    func testContextualGroupsContainAtMostTwoPhrases() {
+    func testContextualGroupsPreferSentenceBoundariesWithMoreContext() {
         let cues = (0..<5).map {
             TranscriptionCueValue(
                 index: $0,
@@ -52,7 +52,7 @@ final class TranslationPolicyTests: XCTestCase {
 
         let groups = ContextualTranslationGrouper.groups(from: cues)
 
-        XCTAssertEqual(groups.map(\.count), [2, 2, 1])
+        XCTAssertEqual(groups.map(\.count), [4, 1])
         XCTAssertEqual(groups.flatMap { $0 }.map(\.index), [0, 1, 2, 3, 4])
     }
 

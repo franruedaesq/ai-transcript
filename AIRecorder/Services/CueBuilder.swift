@@ -2,11 +2,11 @@ import Foundation
 
 enum CueBuilder {
     static func build(from tokens: [AppTokenTiming]) -> [TranscriptionCueValue] {
-        let words = aggregateWords(tokens)
+        let words = timedWords(from: tokens)
         guard !words.isEmpty else { return [] }
 
         var result: [TranscriptionCueValue] = []
-        var current: [Word] = []
+        var current: [TimedWord] = []
 
         func flush() {
             guard let first = current.first, let last = current.last else { return }
@@ -44,7 +44,7 @@ enum CueBuilder {
         }
     }
 
-    private struct Word {
+    struct TimedWord: Equatable, Sendable {
         var text: String
         var startTime: TimeInterval
         var endTime: TimeInterval
@@ -52,8 +52,8 @@ enum CueBuilder {
         var tokenCount: Int
     }
 
-    private static func aggregateWords(_ tokens: [AppTokenTiming]) -> [Word] {
-        var words: [Word] = []
+    static func timedWords(from tokens: [AppTokenTiming]) -> [TimedWord] {
+        var words: [TimedWord] = []
         var hasPendingWordBoundary = false
         for token in tokens where !token.token.isEmpty {
             let raw = token.token

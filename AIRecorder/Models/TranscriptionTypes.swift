@@ -5,7 +5,9 @@ enum TranscriptionEngineKind: String, Codable, CaseIterable, Identifiable, Senda
     case appleSpeech
 
     var id: String { rawValue }
-    var displayName: String { self == .nemotron ? "Nemotron 3.5" : "Apple Speech" }
+    var displayName: String {
+        AppLocalization.string(self == .nemotron ? "Nemotron 3.5" : "Apple Speech")
+    }
 }
 
 enum TranscriptionLanguage: String, Codable, CaseIterable, Identifiable, Sendable {
@@ -18,10 +20,10 @@ enum TranscriptionLanguage: String, Codable, CaseIterable, Identifiable, Sendabl
 
     var displayName: String {
         switch self {
-        case .automatic: "Automático"
-        case .spanish: "Español"
-        case .english: "English"
-        case .german: "Deutsch"
+        case .automatic: AppLocalization.string("Automático")
+        case .spanish: AppLocalization.string("Español")
+        case .english: AppLocalization.string("Inglés")
+        case .german: AppLocalization.string("Alemán")
         }
     }
 
@@ -31,6 +33,15 @@ enum TranscriptionLanguage: String, Codable, CaseIterable, Identifiable, Sendabl
         case .spanish: "es-ES"
         case .english: "en-US"
         case .german: "de-DE"
+        }
+    }
+
+    var translationSourceCode: String? {
+        switch self {
+        case .automatic: nil
+        case .spanish: "es"
+        case .english: "en"
+        case .german: "de"
         }
     }
 
@@ -101,13 +112,55 @@ struct LiveTranslationBlock: Identifiable, Equatable, Sendable {
     }
 }
 
-struct TranslatedSubtitleCueValue: Equatable, Sendable {
+struct LiveTranscriptBlock: Identifiable, Equatable, Sendable {
+    let id: UUID
+    let text: String
+
+    init(id: UUID = UUID(), text: String) {
+        self.id = id
+        self.text = text
+    }
+}
+
+struct TranslatedSubtitleCueValue: Codable, Equatable, Sendable {
     let index: Int
     let startTime: TimeInterval
     let endTime: TimeInterval
     let sourceStartIndex: Int
     let sourceEndIndex: Int
     let text: String
+    let needsRetranslation: Bool
+
+    init(index: Int, startTime: TimeInterval, endTime: TimeInterval, sourceStartIndex: Int, sourceEndIndex: Int, text: String, needsRetranslation: Bool = false) {
+        self.index = index; self.startTime = startTime; self.endTime = endTime
+        self.sourceStartIndex = sourceStartIndex; self.sourceEndIndex = sourceEndIndex
+        self.text = text; self.needsRetranslation = needsRetranslation
+    }
+
+    private enum CodingKeys: String, CodingKey { case index, startTime, endTime, sourceStartIndex, sourceEndIndex, text, needsRetranslation }
+    init(from decoder: Decoder) throws {
+        let values = try decoder.container(keyedBy: CodingKeys.self)
+        index = try values.decode(Int.self, forKey: .index)
+        startTime = try values.decode(TimeInterval.self, forKey: .startTime)
+        endTime = try values.decode(TimeInterval.self, forKey: .endTime)
+        sourceStartIndex = try values.decode(Int.self, forKey: .sourceStartIndex)
+        sourceEndIndex = try values.decode(Int.self, forKey: .sourceEndIndex)
+        text = try values.decode(String.self, forKey: .text)
+        needsRetranslation = try values.decodeIfPresent(Bool.self, forKey: .needsRetranslation) ?? false
+    }
+}
+
+struct RecordingMarkerValue: Codable, Hashable, Sendable { let id: UUID; let time: TimeInterval; let title: String; let createdAt: Date }
+
+struct CustomVocabularyEntry: Codable, Hashable, Identifiable, Sendable {
+    var id: UUID
+    var preferred: String
+    var aliases: [String]
+    init(id: UUID = UUID(), preferred: String, aliases: [String] = []) {
+        self.id = id
+        self.preferred = preferred.trimmingCharacters(in: .whitespacesAndNewlines)
+        self.aliases = aliases.map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }.filter { !$0.isEmpty }
+    }
 }
 
 enum RecordingSessionState: Equatable, Sendable {
@@ -141,11 +194,11 @@ enum ModelPreparationState: Equatable, Sendable {
 
     var label: String {
         switch self {
-        case .idle: "Modelo no cargado"
-        case .checking: "Comprobando el modelo…"
-        case .downloading: "Descargando el modelo…"
-        case .loading: "Cargando Nemotron en memoria…"
-        case .ready: "Nemotron está listo"
+        case .idle: AppLocalization.string("Modelo no cargado")
+        case .checking: AppLocalization.string("Comprobando el modelo…")
+        case .downloading: AppLocalization.string("Descargando el modelo…")
+        case .loading: AppLocalization.string("Cargando Nemotron en memoria…")
+        case .ready: AppLocalization.string("Nemotron está listo")
         case .failed(let message): message
         }
     }
@@ -164,6 +217,16 @@ struct TranscriptionCueValue: Codable, Hashable, Sendable {
     let endTime: TimeInterval
     let text: String
     let confidence: Float
+    let speakerID: String?
+
+    init(index: Int, startTime: TimeInterval, endTime: TimeInterval, text: String, confidence: Float, speakerID: String? = nil) {
+        self.index = index
+        self.startTime = startTime
+        self.endTime = endTime
+        self.text = text
+        self.confidence = confidence
+        self.speakerID = speakerID
+    }
 }
 
 struct TranscriptionResult: Sendable {
@@ -188,18 +251,22 @@ enum AppError: LocalizedError, Sendable {
     case microphonePermissionDenied
     case modelUnavailable(String)
     case unsupportedAudio
+    case recordingAudioUnavailable
     case invalidState
     case appleSpeechUnavailable
     case translationUnavailable(String)
+    case transcriptionBacklog
 
     var errorDescription: String? {
         switch self {
-        case .microphonePermissionDenied: "No se concedió acceso al micrófono."
+        case .microphonePermissionDenied: AppLocalization.string("No se concedió acceso al micrófono.")
         case .modelUnavailable(let message): message
-        case .unsupportedAudio: "El archivo no contiene audio compatible."
-        case .invalidState: "La operación no es válida en el estado actual."
-        case .appleSpeechUnavailable: "Apple SpeechTranscriber no está disponible para este dispositivo o idioma."
+        case .unsupportedAudio: AppLocalization.string("El archivo no contiene audio compatible.")
+        case .recordingAudioUnavailable: AppLocalization.string("El audio de esta grabación no se puede abrir. La transcripción sigue disponible.")
+        case .invalidState: AppLocalization.string("La operación no es válida en el estado actual.")
+        case .appleSpeechUnavailable: AppLocalization.string("Apple SpeechTranscriber no está disponible para este dispositivo o idioma.")
         case .translationUnavailable(let message): message
+        case .transcriptionBacklog: AppLocalization.string("La transcripción en vivo no pudo seguir el ritmo del audio. El audio original se conserva y se verificará al finalizar.")
         }
     }
 }

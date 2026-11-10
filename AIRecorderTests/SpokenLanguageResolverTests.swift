@@ -33,4 +33,12 @@ final class SpokenLanguageResolverTests: XCTestCase {
     func testRejectsSamplesThatAreTooShort() {
         XCTAssertNil(SpokenLanguageResolver.detect(in: "Hello"))
     }
+
+    func testStableDetectorRequiresMatchingObservations() {
+        var detector = StableSpokenLanguageDetector(requiredMatches: 3)
+        XCTAssertNil(detector.observe("es-ES"))
+        XCTAssertNil(detector.observe("en-US"))
+        XCTAssertNil(detector.observe("en"))
+        XCTAssertEqual(detector.observe("English"), "en")
+    }
 }

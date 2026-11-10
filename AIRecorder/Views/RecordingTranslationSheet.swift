@@ -103,7 +103,7 @@ struct RecordingTranslationSheet: View {
         case .checking:
             HStack { ProgressView(); Text("Comprobando idiomas…") }
         case .installed:
-            Label("Los idiomas están listos", systemImage: "checkmark.circle.fill")
+            Label("Los idiomas están listos.", systemImage: "checkmark.circle.fill")
                 .foregroundStyle(.green)
         case .needsDownload:
             Label("iOS necesita descargar estos idiomas", systemImage: "arrow.down.circle")
@@ -122,8 +122,8 @@ struct RecordingTranslationSheet: View {
     }
 
     private var actionTitle: String {
-        if isWorking { return "Traduciendo…" }
-        return availability == .needsDownload ? "Descargar y traducir" : "Traducir"
+        if isWorking { return AppLocalization.string("Traduciendo…") }
+        return AppLocalization.string(availability == .needsDownload ? "Descargar y traducir" : "Traducir")
     }
 
     private func loadLanguages() async {
@@ -164,7 +164,7 @@ struct RecordingTranslationSheet: View {
         case .installed: availability = .installed
         case .supported: availability = .needsDownload
         case .unsupported: availability = .unsupported
-        @unknown default: availability = .failed("iOS devolvió un estado desconocido.")
+        @unknown default: availability = .failed(AppLocalization.string("iOS devolvió un estado desconocido."))
         }
     }
 
@@ -193,7 +193,7 @@ struct RecordingTranslationSheet: View {
         let success = await translate(targetLanguage)
         isWorking = false
         if success { dismiss() }
-        else { availability = .failed("No se pudo completar la traducción.") }
+        else { availability = .failed(AppLocalization.string("No se pudo completar la traducción.")) }
     }
 }
 

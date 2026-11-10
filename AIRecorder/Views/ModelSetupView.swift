@@ -14,12 +14,15 @@ struct ModelSetupView: View {
                 .font(.system(size: 58, weight: .medium))
                 .foregroundStyle(.blue)
                 .frame(width: 112, height: 112)
-                .background(.blue.opacity(0.1), in: RoundedRectangle(cornerRadius: 30))
+                .background(
+                    .blue.opacity(0.1),
+                    in: RoundedRectangle(cornerRadius: AppVisualStyle.cardCornerRadius)
+                )
                 .accessibilityHidden(true)
 
             VStack(spacing: 12) {
                 Text("Preparar transcripción local")
-                    .font(.largeTitle.bold())
+                    .font(AppVisualStyle.screenTitle)
                     .multilineTextAlignment(.center)
                 Text("Para transcribir sin enviar tus audios fuera del dispositivo, AI Recorder necesita descargar Nemotron 3.5 una sola vez.")
                     .font(.body)
@@ -33,8 +36,8 @@ struct ModelSetupView: View {
                 Label("Se requiere conexión durante la descarga", systemImage: "wifi")
             }
             .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(20)
-            .background(.secondary.opacity(0.08), in: RoundedRectangle(cornerRadius: 20))
+            .padding(AppVisualStyle.cardPadding)
+            .appInsetSurface()
 
             if isDownloading {
                 VStack(spacing: 10) {
@@ -71,7 +74,7 @@ struct ModelSetupView: View {
             } label: {
                 HStack {
                     if isDownloading { ProgressView().tint(.white) }
-                    Text(isDownloading ? "Preparando…" : "Descargar modelo")
+                    Text(AppLocalization.string(isDownloading ? "Preparando…" : "Descargar modelo"))
                         .fontWeight(.semibold)
                 }
                 .frame(maxWidth: .infinity)
@@ -89,8 +92,9 @@ struct ModelSetupView: View {
             .disabled(isDownloading)
             .accessibilityHint("Continúa sin descargar Nemotron")
         }
-        .padding(.horizontal, 28)
+        .padding(.horizontal, AppVisualStyle.pageHorizontalPadding)
         .padding(.vertical, 20)
+        .background(AppVisualStyle.screenBackground.ignoresSafeArea())
         .interactiveDismissDisabled(isDownloading)
         .alert("No se pudo descargar", isPresented: Binding(
             get: { if case .failed = session.state { true } else { false } },

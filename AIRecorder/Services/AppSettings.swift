@@ -10,13 +10,15 @@ final class AppSettings {
         static let nemotronPrepared = "model.nemotronPrepared"
         static let translationEnabled = "translation.enabled"
         static let translationTarget = "translation.target"
+        static let translationLanguages = "translation.languages"
+        static let customVocabulary = "transcription.customVocabulary"
     }
 
     var engine: TranscriptionEngineKind {
         didSet {
             UserDefaults.standard.set(engine.rawValue, forKey: Keys.engine)
             if engine == .appleSpeech, language == .automatic {
-                language = Locale.current.language.languageCode?.identifier == "en" ? .english : .spanish
+                language = Self.explicitSpeechLanguageForCurrentLocale()
             }
         }
     }
@@ -32,6 +34,10 @@ final class AppSettings {
     var translationTargetLanguage: String {
         didSet { UserDefaults.standard.set(translationTargetLanguage, forKey: Keys.translationTarget) }
     }
+    var translationLanguageCodes: [String] {
+        didSet { UserDefaults.standard.set(translationLanguageCodes, forKey: Keys.translationLanguages) }
+    }
+    var customVocabulary: [CustomVocabularyEntry] { didSet { persistCustomVocabulary() } }
 
     init() {
         engine = TranscriptionEngineKind(rawValue: UserDefaults.standard.string(forKey: Keys.engine) ?? "") ?? .nemotron
@@ -39,10 +45,47 @@ final class AppSettings {
         language = storedLanguage
         nemotronPrepared = UserDefaults.standard.bool(forKey: Keys.nemotronPrepared)
         translationEnabled = UserDefaults.standard.bool(forKey: Keys.translationEnabled)
-        translationTargetLanguage = UserDefaults.standard.string(forKey: Keys.translationTarget)
+        let storedTranslationTarget = UserDefaults.standard.string(forKey: Keys.translationTarget)
             ?? Self.defaultTranslationTarget(for: storedLanguage)
+        translationTargetLanguage = storedTranslationTarget
+        let storedTranslationLanguages = UserDefaults.standard.stringArray(forKey: Keys.translationLanguages)
+            ?? ["en", "es", "de"]
+        translationLanguageCodes = Self.normalizedTranslationLanguages(
+            storedTranslationLanguages + [storedTranslationTarget]
+        )
+        if let data = UserDefaults.standard.data(forKey: Keys.customVocabulary), let value = try? JSONDecoder().decode([CustomVocabularyEntry].self, from: data) {
+            customVocabulary = value
+        } else { customVocabulary = [] }
         if engine == .appleSpeech, language == .automatic {
-            language = Locale.current.language.languageCode?.identifier == "en" ? .english : .spanish
+            language = Self.explicitSpeechLanguageForCurrentLocale()
+        }
+    }
+
+    func addTranslationLanguage(_ code: String) {
+        translationLanguageCodes = Self.normalizedTranslationLanguages(
+            translationLanguageCodes + [code]
+        )
+    }
+
+    func removeTranslationLanguage(_ code: String) {
+        let normalized = TranslationPolicy.normalizedCode(code)
+        let remaining = translationLanguageCodes.filter {
+            !TranslationPolicy.sameLanguage($0, normalized)
+        }
+        guard !remaining.isEmpty else { return }
+        translationLanguageCodes = remaining
+        if TranslationPolicy.sameLanguage(translationTargetLanguage, normalized) {
+            translationTargetLanguage = remaining[0]
+            translationEnabled = false
+        }
+    }
+
+    private static func normalizedTranslationLanguages(_ codes: [String]) -> [String] {
+        var seen = Set<String>()
+        return codes.compactMap { value in
+            let code = TranslationPolicy.normalizedCode(value)
+            guard !code.isEmpty, seen.insert(code).inserted else { return nil }
+            return code
         }
     }
 
@@ -55,4 +98,26 @@ final class AppSettings {
             Locale.current.language.languageCode?.identifier == "en" ? "es" : "en"
         }
     }
+
+    private static func explicitSpeechLanguageForCurrentLocale() -> TranscriptionLanguage {
+        switch Locale.current.language.languageCode?.identifier {
+        case "es": .spanish
+        case "de": .german
+        default: .english
+        }
+    }
+
+    var vocabularyHints: [String] { Array(customVocabulary.map(\.preferred).filter { !$0.isEmpty }.prefix(100)) }
+    func addVocabularyEntry(preferred: String, aliases: [String]) {
+        let clean = preferred.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !clean.isEmpty, !customVocabulary.contains(where: { $0.preferred.localizedCaseInsensitiveCompare(clean) == .orderedSame }) else { return }
+        customVocabulary.append(.init(preferred: clean, aliases: aliases))
+    }
+    func updateVocabularyEntry(id: UUID, preferred: String, aliases: [String]) {
+        guard let index = customVocabulary.firstIndex(where: { $0.id == id }) else { return }
+        let clean = preferred.trimmingCharacters(in: .whitespacesAndNewlines); guard !clean.isEmpty else { return }
+        customVocabulary[index] = .init(id: id, preferred: clean, aliases: aliases)
+    }
+    func removeVocabularyEntry(id: UUID) { customVocabulary.removeAll { $0.id == id } }
+    private func persistCustomVocabulary() { guard let data = try? JSONEncoder().encode(customVocabulary) else { return }; UserDefaults.standard.set(data, forKey: Keys.customVocabulary) }
 }

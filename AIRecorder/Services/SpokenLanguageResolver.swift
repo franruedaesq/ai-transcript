@@ -23,7 +23,10 @@ enum SpokenLanguageResolver {
     }
 
     static func detect(in text: String, minimumConfidence: Double = 0.55) -> String? {
-        let sample = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        // A few thousand characters are enough for language recognition. Keeping
+        // the sample bounded prevents long transcripts from stalling a view render.
+        let sample = String(text.prefix(4_096))
+            .trimmingCharacters(in: .whitespacesAndNewlines)
         guard sample.count >= 8, sample.split(whereSeparator: \.isWhitespace).count >= 2 else {
             return nil
         }
@@ -43,4 +46,22 @@ enum SpokenLanguageResolver {
         default: return nil
         }
     }
+}
+
+struct StableSpokenLanguageDetector: Sendable {
+    private var candidate: String?
+    private var matchingObservations = 0
+    private(set) var resolved: String?
+    let requiredMatches: Int
+
+    init(requiredMatches: Int = 3) { self.requiredMatches = max(1, requiredMatches) }
+
+    mutating func observe(_ rawValue: String?) -> String? {
+        guard resolved == nil, let rawValue, let language = SpokenLanguageResolver.canonicalCode(rawValue) else { return resolved }
+        if candidate == language { matchingObservations += 1 } else { candidate = language; matchingObservations = 1 }
+        if matchingObservations >= requiredMatches { resolved = language }
+        return resolved
+    }
+
+    mutating func reset() { candidate = nil; matchingObservations = 0; resolved = nil }
 }

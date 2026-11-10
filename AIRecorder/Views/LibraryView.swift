@@ -5,7 +5,11 @@ import UniformTypeIdentifiers
 struct LibraryView: View {
     let settings: AppSettings
     let session: RecordingSessionController
+    let selectedRecordingID: UUID?
+    let openRecording: ((UUID) -> Void)?
+    let recordingDeleted: ((UUID) -> Void)?
     @Environment(\.modelContext) private var context
+    @Environment(\.appLayoutMode) private var appLayoutMode
     @Query(sort: \Recording.createdAt, order: .reverse) private var recordings: [Recording]
     @State private var presentedSheet: SheetDestination?
     @State private var isShowingRecorder = false
@@ -16,6 +20,35 @@ struct LibraryView: View {
     @State private var translationAvailability = TranslationAvailabilityController()
     @State private var exportCoordinator = RecordingExportCoordinator()
     @State private var translationMessage: String?
+    @State private var searchText = ""
+    @State private var searchQuery = ""
+    @State private var recordingIDToRename: UUID?
+    @State private var renameDraft = ""
+    @State private var importMessage: String?
+
+    init(
+        settings: AppSettings,
+        session: RecordingSessionController,
+        selectedRecordingID: UUID? = nil,
+        openRecording: ((UUID) -> Void)? = nil,
+        recordingDeleted: ((UUID) -> Void)? = nil
+    ) {
+        self.settings = settings
+        self.session = session
+        self.selectedRecordingID = selectedRecordingID
+        self.openRecording = openRecording
+        self.recordingDeleted = recordingDeleted
+    }
+
+    private var filteredRecordings: [Recording] {
+        let query = searchQuery.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !query.isEmpty else { return recordings }
+        return recordings.filter { recording in
+            recording.title.localizedCaseInsensitiveContains(query)
+                || recording.transcript.localizedCaseInsensitiveContains(query)
+                || recording.cues.contains { $0.text.localizedCaseInsensitiveContains(query) }
+        }
+    }
 
     enum SheetDestination: String, Identifiable {
         case settings
@@ -24,73 +57,62 @@ struct LibraryView: View {
     }
 
     var body: some View {
-        List {
-            if session.modelPreparation.isBusy, settings.engine == .nemotron {
-                Section {
-                    ModelWarmupStatus(state: session.modelPreparation)
-                        .listRowSeparator(.hidden)
-                }
-            }
-            Section {
-                if recordings.isEmpty {
-                    ContentUnavailableView(
-                        "Sin grabaciones",
-                        systemImage: "waveform",
-                        description: Text("Graba o importa un audio para comenzar.")
-                    )
-                    .listRowSeparator(.hidden)
-                } else {
-                    ForEach(recordings) { recording in
-                        HStack(spacing: 8) {
-                            NavigationLink(value: recording.id) {
-                                RecordingRow(recording: recording)
-                            }
-                            .buttonStyle(.plain)
+        ScrollView {
+            LazyVStack(spacing: AppVisualStyle.sectionSpacing) {
+                LibraryHeader(
+                    searchText: $searchText,
+                    openSettings: { presentedSheet = .settings }
+                )
 
-                            RecordingActionsMenu(
-                                recording: recording,
-                                coordinator: exportCoordinator,
-                                includeDelete: true,
-                                delete: { recordingIDToDelete = recording.id }
-                            )
+                if session.state == .finalizing {
+                    RecordingFinalizationStatus(
+                        label: session.finalizationLabel ?? AppLocalization.string("Procesando"),
+                        progress: session.finalizationProgress
+                    )
+                    .libraryStatusCard()
+                }
+
+                if session.modelPreparation.isBusy, settings.engine == .nemotron {
+                    ModelWarmupStatus(state: session.modelPreparation)
+                        .libraryStatusCard()
+                }
+
+                if recordings.isEmpty {
+                    LibraryEmptyState()
+                        .padding(.top, appLayoutMode == .pad ? 56 : 128)
+                        .frame(minHeight: appLayoutMode == .pad ? 380 : 470, alignment: .top)
+                } else if filteredRecordings.isEmpty {
+                    ContentUnavailableView.search(text: searchQuery)
+                        .frame(minHeight: appLayoutMode == .pad ? 300 : 400)
+                } else {
+                    LazyVStack(spacing: AppVisualStyle.cardSpacing) {
+                        ForEach(filteredRecordings) { recording in
+                            recordingListItem(recording)
                         }
-                            .listRowInsets(.init(top: 14, leading: 20, bottom: 14, trailing: 16))
-                            .swipeActions {
-                                Button(role: .destructive) { recordingIDToDelete = recording.id } label: {
-                                    Label("Eliminar", systemImage: "trash")
-                                }
-                            }
                     }
                 }
-            } header: {
-                HStack {
-                    Label(title: { Text("Todas") + Text(" · \(recordings.count)") }, icon: { Image(systemName: "folder") })
-                        .font(.subheadline.weight(.medium))
-                        .textCase(nil)
-                    Spacer()
-                }
-                .padding(.vertical, 8)
             }
+            .frame(maxWidth: appLayoutMode == .pad ? 560 : 680)
+            .frame(maxWidth: .infinity)
+            .padding(.horizontal, AppVisualStyle.pageHorizontalPadding)
+            .padding(.top, 0)
+            .padding(.bottom, 18)
         }
-        .listStyle(.plain)
-        .navigationTitle("Grabaciones")
-        .toolbar {
-            ToolbarItem(placement: .topBarTrailing) {
-                Button { presentedSheet = .settings } label: { Image(systemName: "gearshape") }
-                    .accessibilityLabel("Ajustes")
-            }
-        }
+        .scrollDismissesKeyboard(.interactively)
+        .background(AppVisualStyle.screenBackground.ignoresSafeArea())
+        .task(id: searchText) { try? await Task.sleep(for: .milliseconds(180)); guard !Task.isCancelled else { return }; searchQuery = searchText }
+        .toolbarVisibility(.hidden, for: .navigationBar)
         .safeAreaInset(edge: .bottom) {
             FloatingCaptureBar(
                 isImporting: $isImporting,
+                isBusy: session.state != .idle,
                 engine: settings.engine,
                 selectedInputLanguage: settings.language,
                 translationEnabled: settings.translationEnabled,
-                translationState: translationAvailability.state,
                 translationTargets: translationAvailability.supportedTargets,
                 selectedTranslationTarget: settings.translationTargetLanguage,
                 record: { Task { await startRecording() } },
-                selectInputLanguage: { settings.language = $0 },
+                selectInputLanguage: { language in Task { await selectInputLanguage(language) } },
                 toggleTranslation: { Task { await toggleTranslation() } },
                 selectTranslationTarget: { code in
                     Task { await selectTranslationTarget(code) }
@@ -121,12 +143,9 @@ struct LibraryView: View {
             }
         }
         .task {
-            if settings.engine == .nemotron, !settings.nemotronPrepared {
-                isShowingModelSetup = true
-            }
             await translationAvailability.refresh(settings: settings)
         }
-        .task(id: "\(settings.language.rawValue)-\(settings.translationTargetLanguage)") {
+        .task(id: "\(settings.language.rawValue)-\(settings.translationTargetLanguage)-\(settings.translationLanguageCodes.joined(separator: ","))") {
             await translationAvailability.refresh(settings: settings)
         }
         .task(id: "\(settings.engine.rawValue)-\(settings.nemotronPrepared)") {
@@ -137,15 +156,15 @@ struct LibraryView: View {
         }
         .fileImporter(
             isPresented: $isImporting,
-            allowedContentTypes: [.mpeg4Audio, .wav, UTType(filenameExtension: "caf") ?? .audio],
-            allowsMultipleSelection: false
+            allowedContentTypes: [.mpeg4Audio, .wav, UTType(filenameExtension: "caf") ?? .audio, .json],
+            allowsMultipleSelection: true
         ) { result in
-            guard case .success(let urls) = result, let url = urls.first else { return }
-            Task { _ = await session.importFile(url, settings: settings, context: context) }
+            guard case .success(let urls) = result else { return }
+            Task { await handleImportedURLs(urls) }
         }
         .overlay {
             if let progress = session.importProgress {
-                ProcessingOverlay(title: "Transcribiendo archivo", progress: progress)
+                ProcessingOverlay(title: AppLocalization.string("Transcribiendo archivo"), progress: progress)
             }
         }
         .alert("Eliminar grabación", isPresented: Binding(
@@ -169,6 +188,12 @@ struct LibraryView: View {
         )) {
             Button("Aceptar", role: .cancel) {}
         } message: { Text(translationMessage ?? "") }
+        .alert("Renombrar grabación", isPresented: Binding(get: { recordingIDToRename != nil }, set: { if !$0 { recordingIDToRename = nil } })) {
+            TextField("Nombre", text: $renameDraft)
+            Button("Cancelar", role: .cancel) { recordingIDToRename = nil }
+            Button("Guardar") { commitRename() }.disabled(renameDraft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+        }
+        .alert("Importación", isPresented: Binding(get: { importMessage != nil }, set: { if !$0 { importMessage = nil } })) { Button("Aceptar", role: .cancel) {} } message: { Text(importMessage ?? "") }
         .alert("No se pudo exportar", isPresented: Binding(
             get: { exportCoordinator.errorMessage != nil },
             set: { if !$0 { exportCoordinator.errorMessage = nil } }
@@ -177,7 +202,42 @@ struct LibraryView: View {
         } message: { Text(exportCoordinator.errorMessage ?? "") }
     }
 
+    private func recordingListItem(_ recording: Recording) -> some View {
+        RecordingLibraryCard(
+            recording: recording,
+            coordinator: exportCoordinator,
+            isSelected: selectedRecordingID == recording.id,
+            open: openAction(for: recording),
+            rename: { beginRename(recording) },
+            delete: { recordingIDToDelete = recording.id }
+        )
+    }
+
+    private func beginRename(_ recording: Recording) { recordingIDToRename = recording.id; renameDraft = recording.title }
+    private func openAction(for recording: Recording) -> (() -> Void)? {
+        guard let openRecording else { return nil }
+        return { openRecording(recording.id) }
+    }
+    private func commitRename() {
+        guard let id = recordingIDToRename, let recording = recordings.first(where: { $0.id == id }) else { return }
+        let clean = renameDraft.trimmingCharacters(in: .whitespacesAndNewlines); guard !clean.isEmpty else { return }
+        recording.title = clean; try? context.save(); try? RecordingRecoveryStore.write(.init(recording: recording)); recordingIDToRename = nil
+    }
+    private func handleImportedURLs(_ urls: [URL]) async {
+        guard !urls.isEmpty else { return }
+        if urls.contains(where: { $0.pathExtension.lowercased() == "json" }) {
+            do { _ = try await RecordingArchiveImportService.restore(from: urls, context: context); importMessage = AppLocalization.string("La copia se restauró correctamente.") }
+            catch { importMessage = error.localizedDescription }
+            return
+        }
+        for url in urls {
+            _ = await session.importFile(url, settings: settings, context: context)
+            if case .failed(let message) = session.state { importMessage = message; session.resetError(); break }
+        }
+    }
+
     private func startRecording() async {
+        guard session.state == .idle else { return }
         if settings.engine == .nemotron, !settings.nemotronPrepared {
             isShowingModelSetup = true
             return
@@ -212,10 +272,32 @@ struct LibraryView: View {
         }
     }
 
-    private func selectTranslationTarget(_ code: String) async {
-        settings.translationTargetLanguage = code
-        settings.translationEnabled = false
+    private func selectInputLanguage(_ language: TranscriptionLanguage) async {
+        let shouldRemainEnabled = settings.translationEnabled
+        settings.language = language
+        if let source = language.translationSourceCode,
+           TranslationPolicy.sameLanguage(source, settings.translationTargetLanguage) {
+            settings.translationTargetLanguage = AppSettings.defaultTranslationTarget(for: language)
+        }
         await translationAvailability.refresh(settings: settings)
+        guard shouldRemainEnabled else { settings.translationEnabled = false; return }
+        switch translationAvailability.state {
+        case .ready: settings.translationEnabled = true
+        case .needsDownload: settings.translationEnabled = false; presentedSheet = .translationSetup
+        default: settings.translationEnabled = false; translationMessage = translationAvailability.state.explanation
+        }
+    }
+
+    private func selectTranslationTarget(_ code: String) async {
+        if let source = settings.language.translationSourceCode,
+           TranslationPolicy.sameLanguage(source, code) {
+            translationMessage = AppLocalization.string("El idioma hablado y el idioma de traducción deben ser diferentes.")
+            return
+        }
+        let shouldRemainEnabled = settings.translationEnabled
+        settings.translationTargetLanguage = code
+        await translationAvailability.refresh(settings: settings)
+        guard shouldRemainEnabled else { settings.translationEnabled = false; return }
         switch translationAvailability.state {
         case .ready:
             settings.translationEnabled = true
@@ -227,11 +309,38 @@ struct LibraryView: View {
     }
 
     private func deleteSelectedRecording() {
-        guard let id = recordingIDToDelete, let recording = recordings.first(where: { $0.id == id }) else { return }
+        guard let id = recordingIDToDelete,
+              let recording = recordings.first(where: { $0.id == id }),
+              recording.status != .processing
+        else { return }
         context.delete(recording)
         try? context.save()
         Task { try? await StorageService.shared.removeRecording(id: id) }
+        recordingDeleted?(id)
         recordingIDToDelete = nil
+    }
+}
+
+private struct RecordingFinalizationStatus: View {
+    let label: String
+    let progress: Double?
+
+    var body: some View {
+        HStack(spacing: 12) {
+            if let progress {
+                ProgressView(value: progress).frame(width: 42)
+            } else {
+                ProgressView()
+            }
+            VStack(alignment: .leading, spacing: 3) {
+                Text(label).font(.subheadline.weight(.medium))
+                Text(AppLocalization.string("El audio ya está guardado"))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+        }
+        .padding(.vertical, 6)
+        .accessibilityElement(children: .combine)
     }
 }
 
@@ -267,10 +376,10 @@ private struct ModelWarmupStatus: View {
 
 private struct FloatingCaptureBar: View {
     @Binding var isImporting: Bool
+    let isBusy: Bool
     let engine: TranscriptionEngineKind
     let selectedInputLanguage: TranscriptionLanguage
     let translationEnabled: Bool
-    let translationState: TranslationAvailabilityState
     let translationTargets: [TranslationLanguageOption]
     let selectedTranslationTarget: String
     let record: () -> Void
@@ -279,155 +388,158 @@ private struct FloatingCaptureBar: View {
     let selectTranslationTarget: (String) -> Void
 
     var body: some View {
-        HStack(spacing: 48) {
-            Button { isImporting = true } label: {
-                Image(systemName: "doc.badge.plus")
-                    .font(.title2)
-                    .frame(width: 58, height: 58)
-            }
-            .buttonStyle(.recorderGlass)
-            .accessibilityLabel("Importar audio")
-            .contextMenu {
-                Button { isImporting = true } label: {
-                    Label("Importar audio", systemImage: "doc.badge.plus")
-                }
-            }
+        VStack(spacing: 8) {
+            languageRoute
+            captureTray
+        }
+        .frame(maxWidth: 560)
+        .frame(maxWidth: .infinity)
+        .padding(.horizontal, AppVisualStyle.pageHorizontalPadding)
+        .padding(.top, 4)
+        .padding(.bottom, 2)
+        .disabled(isBusy)
+    }
 
-            Button(action: record) {
-                Image(systemName: "mic.fill")
-                    .font(.system(size: 30, weight: .semibold))
-                    .foregroundStyle(.white)
-                    .frame(width: 82, height: 82)
-                    .background(.red, in: Circle())
-                    .overlay(Circle().stroke(.white.opacity(0.9), lineWidth: 4).padding(6))
-                    .shadow(color: .red.opacity(0.24), radius: 12, y: 6)
-                    .overlay(alignment: .topTrailing) {
-                        Menu {
-                            Section("Idioma de entrada") {
-                                ForEach(inputLanguages) { language in
-                                    Button {
-                                        selectInputLanguage(language)
-                                    } label: {
-                                        if language == selectedInputLanguage {
-                                            Label(language.displayName, systemImage: "checkmark")
-                                        } else {
-                                            Text(language.displayName)
-                                        }
-                                    }
-                                }
-                            }
-                        } label: {
-                            LanguageBadge(text: selectedInputLanguage.badgeCode, tint: .red)
-                                // Ampliamos un poco el área de toque para que no haya accidentes
-                                .contentShape(Rectangle())
+    private var languageRoute: some View {
+        HStack(spacing: 10) {
+            Menu {
+                ForEach(inputLanguages) { language in
+                    Button { selectInputLanguage(language) } label: {
+                        if language == selectedInputLanguage {
+                            Label(language.displayName, systemImage: "checkmark")
+                        } else {
+                            Text(language.displayName)
                         }
-                        .offset(x: 6, y: -3)
                     }
+                }
+            } label: {
+                HStack(spacing: 7) {
+                    Image(systemName: "globe")
+                        .font(.title3)
+                    Text(selectedInputLanguage.displayName)
+                        .font(.subheadline.bold())
+                        .lineLimit(1)
+                    Image(systemName: "chevron.down")
+                        .font(.caption2.bold())
+                        .foregroundStyle(.secondary)
+                }
+                .foregroundStyle(.primary)
+                .frame(minHeight: 44)
+                .contentShape(Rectangle())
             }
-            .accessibilityLabel("Iniciar grabación · idioma de entrada \(selectedInputLanguage.displayName)")
-            .accessibilityHint("Mantén pulsado para cambiar el idioma de entrada")
-            .contextMenu {
-                Section("Idioma de entrada") {
-                    ForEach(inputLanguages) { language in
-                        Button {
-                            selectInputLanguage(language)
-                        } label: {
-                            if language == selectedInputLanguage {
+            .tint(.primary)
+
+            if translationEnabled {
+                Image(systemName: "arrow.right")
+                    .font(.subheadline.bold())
+                    .foregroundStyle(.blue)
+                    .accessibilityHidden(true)
+
+                Menu {
+                    ForEach(translationTargets) { language in
+                        Button { selectTranslationTarget(language.code) } label: {
+                            if TranslationPolicy.sameLanguage(language.code, selectedTranslationTarget) {
                                 Label(language.displayName, systemImage: "checkmark")
                             } else {
                                 Text(language.displayName)
                             }
                         }
+                        .disabled(selectedInputLanguage.translationSourceCode.map {
+                            TranslationPolicy.sameLanguage($0, language.code)
+                        } ?? false)
                     }
+                    if translationTargets.isEmpty { Text("Comprobando idiomas…") }
+                } label: {
+                    HStack(spacing: 6) {
+                        Text(TranslationPolicy.displayName(for: selectedTranslationTarget))
+                            .font(.subheadline.bold())
+                            .lineLimit(1)
+                        Image(systemName: "chevron.down")
+                            .font(.caption2.bold())
+                    }
+                    .foregroundStyle(.blue)
+                    .frame(minHeight: 44)
+                    .contentShape(Rectangle())
                 }
+                .tint(.blue)
             }
 
-            Button(action: toggleTranslation) {
-                Image(systemName: translationIcon)
-                    .font(.title2)
-                    .foregroundStyle(translationColor)
-                    .frame(width: 58, height: 58)
-                    .overlay(alignment: .topTrailing) {
-                        Menu {
-                            Section("Modo de traducción") {
-                                Button(action: toggleTranslation) {
-                                    Label(
-                                        translationEnabled ? "Desactivar traducción" : "Activar traducción",
-                                        systemImage: translationEnabled ? "translate" : "translate"
-                                    )
-                                }
-                                Menu("Traducir a") {
-                                    ForEach(translationTargets) { language in
-                                        Button {
-                                            selectTranslationTarget(language.code)
-                                        } label: {
-                                            if TranslationPolicy.sameLanguage(language.code, selectedTranslationTarget) {
-                                                Label(language.displayName, systemImage: "checkmark")
-                                            } else {
-                                                Text(language.displayName)
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        } label: {
-                            LanguageBadge(
-                                text: TranslationPolicy.normalizedCode(selectedTranslationTarget).uppercased(),
-                                tint: translationEnabled ? .blue : .secondary
-                            )
-                            .contentShape(Rectangle())
-                        }
-                        .offset(x: 4, y: -3)
-                    }
-            }
-            .buttonStyle(.recorderGlass)
-            .accessibilityLabel(
-                translationEnabled
-                    ? "Desactivar traducción a \(TranslationPolicy.displayName(for: selectedTranslationTarget))"
-                    : "Activar traducción a \(TranslationPolicy.displayName(for: selectedTranslationTarget))"
-            )
-            .accessibilityHint("Mantén pulsado para cambiar el idioma de salida. \(translationState.explanation)")
-            .contextMenu {
-                Section("Modo de traducción") {
-                    Button(action: toggleTranslation) {
-                        Label(
-                            translationEnabled ? "Desactivar traducción" : "Activar traducción",
-                            systemImage: translationEnabled ? "translate" : "translate"
-                        )
-                    }
-                    Menu("Traducir a") {
-                        ForEach(translationTargets) { language in
-                            Button {
-                                selectTranslationTarget(language.code)
-                            } label: {
-                                if TranslationPolicy.sameLanguage(language.code, selectedTranslationTarget) {
-                                    Label(language.displayName, systemImage: "checkmark")
-                                } else {
-                                    Text(language.displayName)
-                                }
-                            }
-                        }
-                    }
-                }
-            }
+            Divider()
+                .frame(height: 24)
+
+            Toggle("Traducir", isOn: translationBinding)
+                .font(.subheadline.bold())
+                .foregroundStyle(translationEnabled ? .blue : .secondary)
+                .tint(.blue)
+                .toggleStyle(CompactSwitchToggleStyle())
+                .fixedSize()
         }
-        .padding(.top, 10)
-        .padding(.bottom, 8)
-        .frame(maxWidth: .infinity)
-        .background(.ultraThinMaterial)
+        .padding(.horizontal, 15)
+        .frame(minHeight: 44)
+        .background {
+            Capsule()
+                .fill(.regularMaterial)
+                .frame(height: 32)
+                .overlay(Capsule().stroke(.secondary.opacity(0.14), lineWidth: 1))
+                .shadow(color: .black.opacity(0.08), radius: 9, y: 4)
+        }
+        .accessibilityElement(children: .contain)
     }
 
-    private var translationIcon: String {
-        if translationEnabled { return "translate" }
-        if case .needsDownload = translationState { return "arrow.down.circle" }
-        return "translate"
+    private var captureTray: some View {
+        ZStack {
+            HStack {
+                Button("Importar audio", systemImage: "doc.badge.plus") {
+                    isImporting = true
+                }
+                .labelStyle(.iconOnly)
+                .font(.title3)
+                .foregroundStyle(.primary)
+                .frame(width: 36, height: 36)
+                .background(.regularMaterial, in: Circle())
+                .overlay(Circle().stroke(.secondary.opacity(0.12), lineWidth: 1))
+                .shadow(color: .black.opacity(0.07), radius: 5, y: 2)
+                .frame(width: 44, height: 44)
+
+                Spacer()
+
+                Color.clear
+                    .frame(width: 44, height: 44)
+                    .accessibilityHidden(true)
+            }
+
+            Button(action: record) {
+                ZStack {
+                    Circle()
+                        .fill(.red.opacity(0.14))
+                        .frame(width: 46, height: 46)
+                    Circle()
+                        .fill(.red)
+                        .frame(width: 38, height: 38)
+                    Circle()
+                        .fill(.white)
+                        .frame(width: 12, height: 12)
+                }
+                .contentShape(Circle())
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel(AppLocalization.string("Iniciar grabación · idioma de entrada \(selectedInputLanguage.displayName)"))
+        }
+        .padding(.horizontal, 18)
+        .frame(height: 58)
+        .background(.regularMaterial, in: Capsule())
+        .overlay(Capsule().stroke(.white.opacity(0.9), lineWidth: 1))
+        .shadow(color: .black.opacity(0.12), radius: 14, y: 8)
     }
 
-    private var translationColor: Color {
-        if translationEnabled { return .blue }
-        if case .needsDownload = translationState { return .orange }
-        if case .ready = translationState { return .primary }
-        return .secondary
+    private var translationBinding: Binding<Bool> {
+        Binding(
+            get: { translationEnabled },
+            set: { newValue in
+                guard newValue != translationEnabled else { return }
+                toggleTranslation()
+            }
+        )
     }
 
     private var inputLanguages: [TranscriptionLanguage] {
@@ -435,81 +547,45 @@ private struct FloatingCaptureBar: View {
     }
 }
 
-private struct LanguageBadge: View {
-    let text: String
-    let tint: Color
+private struct CompactSwitchToggleStyle: ToggleStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        Button {
+            configuration.isOn.toggle()
+        } label: {
+            HStack(spacing: 8) {
+                configuration.label
 
-    var body: some View {
-        Text(text)
-            .font(.caption2.weight(.bold).monospaced())
-            .foregroundStyle(.white)
-            .padding(.horizontal, 5)
-            .padding(.vertical, 3)
-            .background(tint, in: Capsule())
-            .overlay(Capsule().stroke(.background, lineWidth: 2))
-            .accessibilityHidden(true)
-    }
-}
+                ZStack {
+                    Capsule()
+                        .fill(configuration.isOn ? Color.accentColor : Color.secondary.opacity(0.32))
 
-private extension TranscriptionLanguage {
-    var badgeCode: String {
-        switch self {
-        case .automatic: "AUTO"
-        case .spanish: "ES"
-        case .english: "EN"
-        case .german: "DE"
+                    HStack(spacing: 0) {
+                        if configuration.isOn { Spacer(minLength: 0) }
+                        Circle()
+                            .fill(.white)
+                            .shadow(color: .black.opacity(0.12), radius: 1, y: 1)
+                        if !configuration.isOn { Spacer(minLength: 0) }
+                    }
+                    .padding(3)
+                }
+                .frame(width: 32, height: 20)
+            }
+            .frame(minHeight: 44)
+            .contentShape(Rectangle())
         }
+        .buttonStyle(.plain)
+        .animation(.snappy(duration: 0.18), value: configuration.isOn)
     }
 }
 
 private extension TranslationAvailabilityState {
     var explanation: String {
         switch self {
-        case .checking: "Comprobando los idiomas de traducción."
-        case .ready: "Los idiomas están listos."
-        case .needsDownload: "Necesitas descargar los idiomas antes de grabar."
+        case .checking: AppLocalization.string("Comprobando los idiomas de traducción.")
+        case .ready: AppLocalization.string("Los idiomas están listos.")
+        case .needsDownload: AppLocalization.string("Necesitas descargar los idiomas antes de grabar.")
         case .unsupported(let message), .unavailable(let message), .failed(let message): message
         }
-    }
-}
-
-private struct RecordingRow: View {
-    let recording: Recording
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 9) {
-            HStack(alignment: .firstTextBaseline) {
-                Text(recording.title).font(.headline).lineLimit(1)
-                Spacer()
-                if recording.status != .saved {
-                    Text(recording.status == .interrupted ? "Interrumpida" : "Procesando")
-                        .font(.caption.weight(.semibold)).foregroundStyle(.orange)
-                }
-            }
-            HStack {
-                Text(recording.createdAt, format: .dateTime.day().month(.abbreviated))
-                Text("·")
-                Text(recording.duration.formattedDuration)
-                Spacer()
-                Text(recording.detectedLanguage ?? recording.requestedLanguage.displayName)
-            }
-            .font(.subheadline).foregroundStyle(.secondary)
-            MiniWaveform(seed: recording.id.hashValue)
-            if !recording.transcript.isEmpty {
-                Text(recording.transcript).font(.subheadline).lineLimit(2).foregroundStyle(.secondary)
-            }
-        }
-    }
-}
-
-private struct MiniWaveform: View {
-    let seed: Int
-    var body: some View {
-        HStack(spacing: 2) {
-            ForEach(0..<40, id: \.self) { index in
-                Capsule().fill(.blue.opacity(0.75)).frame(width: 2, height: CGFloat(4 + abs((seed &+ index * 17) % 16)))
-            }
-        }.frame(height: 22)
     }
 }
 

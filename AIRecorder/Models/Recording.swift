@@ -17,10 +17,19 @@ final class Recording {
     var translationEnabled: Bool = false
     var translationTargetLanguage: String?
     var translationStatusRaw: String = RecordingTranslationStatus.none.rawValue
+    var expectedSpeakerCount: Int?
     @Relationship(deleteRule: .cascade, inverse: \TranscriptCue.recording)
     var cues: [TranscriptCue]
+    @Relationship(deleteRule: .cascade, inverse: \TranscriptToken.recording)
+    var tokens: [TranscriptToken]
     @Relationship(deleteRule: .cascade, inverse: \TranslatedSubtitleCue.recording)
     var translatedCues: [TranslatedSubtitleCue]
+    @Relationship(deleteRule: .cascade, inverse: \RecordingMarker.recording)
+    var markers: [RecordingMarker]
+    @Relationship(deleteRule: .cascade, inverse: \SpeakerProfile.recording)
+    var speakerProfiles: [SpeakerProfile]
+    @Relationship(deleteRule: .cascade, inverse: \SpeakerTurn.recording)
+    var speakerTurns: [SpeakerTurn]
 
     init(
         id: UUID = UUID(),
@@ -37,8 +46,13 @@ final class Recording {
         translationEnabled: Bool = false,
         translationTargetLanguage: String? = nil,
         translationStatus: RecordingTranslationStatus = .none,
+        expectedSpeakerCount: Int? = nil,
         cues: [TranscriptCue] = [],
-        translatedCues: [TranslatedSubtitleCue] = []
+        tokens: [TranscriptToken] = [],
+        translatedCues: [TranslatedSubtitleCue] = [],
+        markers: [RecordingMarker] = [],
+        speakerProfiles: [SpeakerProfile] = [],
+        speakerTurns: [SpeakerTurn] = []
     ) {
         self.id = id
         self.title = title
@@ -54,8 +68,13 @@ final class Recording {
         self.translationEnabled = translationEnabled
         self.translationTargetLanguage = translationTargetLanguage
         self.translationStatusRaw = translationStatus.rawValue
+        self.expectedSpeakerCount = expectedSpeakerCount
         self.cues = cues
+        self.tokens = tokens
         self.translatedCues = translatedCues
+        self.markers = markers
+        self.speakerProfiles = speakerProfiles
+        self.speakerTurns = speakerTurns
     }
 
     var source: RecordingSource { RecordingSource(rawValue: sourceRaw) ?? .microphone }
@@ -71,7 +90,11 @@ final class Recording {
     }
 
     var orderedCues: [TranscriptCue] { cues.sorted { $0.index < $1.index } }
+    var orderedTokens: [TranscriptToken] { tokens.sorted { $0.index < $1.index } }
     var orderedTranslatedCues: [TranslatedSubtitleCue] { translatedCues.sorted { $0.index < $1.index } }
+    var orderedMarkers: [RecordingMarker] { markers.sorted { $0.time < $1.time } }
+    var orderedSpeakerProfiles: [SpeakerProfile] { speakerProfiles.sorted { $0.sortOrder < $1.sortOrder } }
+    var orderedSpeakerTurns: [SpeakerTurn] { speakerTurns.sorted { $0.startTime < $1.startTime } }
 }
 
 @Model
@@ -83,6 +106,7 @@ final class TranslatedSubtitleCue {
     var sourceStartIndex: Int
     var sourceEndIndex: Int
     var text: String
+    var needsRetranslation: Bool = false
     var recording: Recording?
 
     init(id: UUID = UUID(), value: TranslatedSubtitleCueValue) {
@@ -93,6 +117,11 @@ final class TranslatedSubtitleCue {
         self.sourceStartIndex = value.sourceStartIndex
         self.sourceEndIndex = value.sourceEndIndex
         self.text = value.text
+        self.needsRetranslation = value.needsRetranslation
+    }
+
+    var value: TranslatedSubtitleCueValue {
+        .init(index: index, startTime: startTime, endTime: endTime, sourceStartIndex: sourceStartIndex, sourceEndIndex: sourceEndIndex, text: text, needsRetranslation: needsRetranslation)
     }
 }
 
@@ -105,6 +134,7 @@ final class TranscriptCue {
     var text: String
     var confidence: Float
     var translatedText: String?
+    var speakerID: String?
     var recording: Recording?
 
     init(id: UUID = UUID(), value: TranscriptionCueValue, translatedText: String? = nil) {
@@ -115,9 +145,28 @@ final class TranscriptCue {
         self.text = value.text
         self.confidence = value.confidence
         self.translatedText = translatedText
+        self.speakerID = value.speakerID
     }
 
     var value: TranscriptionCueValue {
-        .init(index: index, startTime: startTime, endTime: endTime, text: text, confidence: confidence)
+        .init(index: index, startTime: startTime, endTime: endTime, text: text, confidence: confidence, speakerID: speakerID)
     }
+}
+
+@Model
+final class RecordingMarker {
+    @Attribute(.unique) var id: UUID
+    var time: TimeInterval
+    var title: String
+    var createdAt: Date
+    var recording: Recording?
+
+    init(id: UUID = UUID(), time: TimeInterval, title: String, createdAt: Date = .now) {
+        self.id = id
+        self.time = max(0, time)
+        self.title = title
+        self.createdAt = createdAt
+    }
+
+    var value: RecordingMarkerValue { .init(id: id, time: time, title: title, createdAt: createdAt) }
 }

@@ -15,6 +15,7 @@ actor AppleSpeechEngine: StreamingTranscriptionEngine {
     private var resultsTask: Task<Void, Never>?
     private var finalizedText = ""
     private var cueValues: [TranscriptionCueValue] = []
+    private var vocabularyHints: [String] = []
 
     init() {
         let pair = AsyncStream<TranscriptionEvent>.makeStream(bufferingPolicy: .bufferingNewest(32))
@@ -32,7 +33,7 @@ actor AppleSpeechEngine: StreamingTranscriptionEngine {
         let transcriber = SpeechTranscriber(
             locale: supported,
             transcriptionOptions: [],
-            reportingOptions: [.volatileResults, .fastResults],
+            reportingOptions: [.volatileResults],
             attributeOptions: [.audioTimeRange]
         )
         if let request = try await AssetInventory.assetInstallationRequest(supporting: [transcriber]) {
@@ -42,14 +43,23 @@ actor AppleSpeechEngine: StreamingTranscriptionEngine {
         analyzerFormat = await SpeechAnalyzer.bestAvailableAudioFormat(compatibleWith: [transcriber])
         self.transcriber = transcriber
         self.analyzer = analyzer
+        try await setVocabulary(vocabularyHints)
         continuation.yield(.ready)
+    }
+
+    func setVocabulary(_ phrases: [String]) async throws {
+        vocabularyHints = Array(phrases.prefix(100))
+        guard let analyzer else { return }
+        let context = AnalysisContext()
+        context.contextualStrings[.general] = vocabularyHints
+        try await analyzer.setContext(context)
     }
 
     func start() async throws {
         guard let analyzer, let transcriber else { throw AppError.invalidState }
         finalizedText = ""
         cueValues = []
-        let pair = AsyncStream<AnalyzerInput>.makeStream(bufferingPolicy: .bufferingNewest(64))
+        let pair = AsyncStream<AnalyzerInput>.makeStream(bufferingPolicy: .bufferingOldest(48))
         inputContinuation = pair.continuation
         try await analyzer.start(inputSequence: pair.stream)
         resultsTask = Task { [continuation] in
@@ -84,7 +94,9 @@ actor AppleSpeechEngine: StreamingTranscriptionEngine {
             converter = AVAudioConverter(from: buffer.format, to: format)
         }
         guard let converted = try converter?.convertedCopy(of: buffer, to: format) else { return }
-        inputContinuation.yield(AnalyzerInput(buffer: converted))
+        if case .dropped = inputContinuation.yield(AnalyzerInput(buffer: converted)) {
+            throw AppError.transcriptionBacklog
+        }
     }
 
     func pause() {}
@@ -119,10 +131,11 @@ actor AppleSpeechEngine: StreamingTranscriptionEngine {
     }
 
     func prepare(language: TranscriptionLanguage) async throws {
-        let message = "SpeechTranscriber requiere compilar esta app con Xcode 26 o posterior."
+        let message = AppLocalization.string("SpeechTranscriber requiere compilar esta app con Xcode 26 o posterior.")
         continuation.yield(.failed(message))
         throw AppError.modelUnavailable(message)
     }
+    func setVocabulary(_ phrases: [String]) async throws {}
     func start() async throws { throw AppError.appleSpeechUnavailable }
     func consume(_ buffer: AVAudioPCMBuffer) async throws {}
     func pause() async {}

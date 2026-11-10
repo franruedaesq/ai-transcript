@@ -1,0 +1,64 @@
+{
+  "sourceLanguage" : "es",
+  "strings" : {
+    "CFBundleName" : {
+      "comment" : "Bundle name",
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "AIRecorder"
+          }
+        }
+      }
+    },
+    "NSMicrophoneUsageDescription" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "AI Recorder benötigt das Mikrofon, um Aufnahmen zu erstellen und sie auf diesem Gerät zu transkribieren."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "AI Recorder needs microphone access to create recordings and transcribe them on this device."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "AI Recorder necesita el micrófono para crear grabaciones y transcribirlas en el dispositivo."
+          }
+        }
+      }
+    },
+    "NSSpeechRecognitionUsageDescription" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "AI Recorder verwendet Apples lokale Spracherkennung, wenn diese Engine ausgewählt ist."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "AI Recorder uses Apple's on-device speech recognition when you select that engine."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "AI Recorder usa el reconocimiento de voz local de Apple cuando eliges ese motor."
+          }
+        }
+      }
+    }
+  },
+  "version" : "1.0"
+}

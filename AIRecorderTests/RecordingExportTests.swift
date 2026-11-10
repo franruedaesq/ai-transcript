@@ -30,4 +30,32 @@ final class RecordingExportTests: XCTestCase {
             "1\n00:00:04,120 --> 00:00:09,400\nHola. ¿Cómo estás?\nHello. How are you?"
         )
     }
+
+    func testVTTUsesHeaderPeriodSeparatorAndNonZeroDuration() {
+        let cue = TranscriptionCueValue(index: 0, startTime: 2, endTime: 2, text: "Hola", confidence: 1)
+        XCTAssertEqual(
+            SubtitleExporter.vtt(original: [cue]),
+            "WEBVTT\n\n00:00:02.000 --> 00:00:02.080\nHola\n"
+        )
+    }
+
+    func testSpeakerNamesAreIncludedInTranscriptExports() {
+        let cue = TranscriptionCueValue(
+            index: 0,
+            startTime: 0,
+            endTime: 1,
+            text: "Hello",
+            confidence: 1,
+            speakerID: "S1"
+        )
+
+        XCTAssertTrue(
+            SubtitleExporter.srt(original: [cue], speakerNames: ["S1": "Alex"])
+                .contains("Alex: Hello")
+        )
+        XCTAssertTrue(
+            SubtitleExporter.vtt(original: [cue], speakerNames: ["S1": "Alex"])
+                .contains("Alex: Hello")
+        )
+    }
 }

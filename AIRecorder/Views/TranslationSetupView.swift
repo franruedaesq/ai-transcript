@@ -22,10 +22,13 @@ struct TranslationSetupView: View {
                     .font(.system(size: 48, weight: .semibold))
                     .foregroundStyle(.blue)
                     .frame(width: 104, height: 104)
-                    .background(.blue.opacity(0.1), in: RoundedRectangle(cornerRadius: 28))
+                    .background(
+                        .blue.opacity(0.1),
+                        in: RoundedRectangle(cornerRadius: AppVisualStyle.cardCornerRadius)
+                    )
 
                 Text("Preparar subtítulos traducidos")
-                    .font(.largeTitle.bold())
+                    .font(AppVisualStyle.screenTitle)
                     .multilineTextAlignment(.center)
                 Text("iOS descargará los idiomas necesarios. Los paquetes se comparten con la app Traducir y el texto se procesa en este dispositivo.")
                     .foregroundStyle(.secondary)
@@ -40,7 +43,7 @@ struct TranslationSetupView: View {
                 Button {
                     beginPreparation()
                 } label: {
-                    Text(isPreparing ? "Preparando…" : "Descargar idiomas")
+                    Text(AppLocalization.string(isPreparing ? "Preparando…" : "Descargar idiomas"))
                         .fontWeight(.semibold)
                         .frame(maxWidth: .infinity)
                         .frame(height: 52)
@@ -48,7 +51,9 @@ struct TranslationSetupView: View {
                 .buttonStyle(.borderedProminent)
                 .disabled(isPreparing)
             }
-            .padding(28)
+            .padding(.horizontal, AppVisualStyle.pageHorizontalPadding)
+            .padding(.vertical, 24)
+            .background(AppVisualStyle.screenBackground.ignoresSafeArea())
             .navigationTitle("Traducción")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -102,7 +107,7 @@ struct TranslationSetupView: View {
             completed()
             dismiss()
         } else {
-            errorMessage = "Los paquetes todavía no están listos. Espera a que iOS termine la descarga y vuelve a intentarlo."
+            errorMessage = AppLocalization.string("Los paquetes todavía no están listos. Espera a que iOS termine la descarga y vuelve a intentarlo.")
         }
     }
 

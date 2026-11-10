@@ -7,6 +7,13 @@ struct SharePayload: Identifiable {
     let urls: [URL]
 }
 
+struct RecordingTextSizeOption: Identifiable {
+    let id: String
+    let title: String
+    let isSelected: Bool
+    let select: () -> Void
+}
+
 @MainActor
 @Observable
 final class RecordingExportCoordinator {
@@ -26,6 +33,17 @@ final class RecordingExportCoordinator {
         }
     }
 
+    func prepareAll(_ recording: Recording) async {
+        isPreparing = true
+        defer { isPreparing = false }
+        do {
+            let snapshot = RecordingExportSnapshot(recording: recording)
+            var kinds: [RecordingExportKind] = [.audio, .transcriptText, .transcriptSRT, .transcriptVTT, .archiveJSON]
+            if !snapshot.translatedCues.isEmpty { kinds += [.translationText, .translationSRT, .translationVTT, .bilingualText, .bilingualSRT, .bilingualVTT] }
+            sharePayload = SharePayload(urls: try await RecordingExportService.shared.prepareMany(kinds, snapshot: snapshot))
+        } catch { errorMessage = error.localizedDescription }
+    }
+
     func copyTranscript(_ recording: Recording) {
         UIPasteboard.general.string = recording.transcript
     }
@@ -40,6 +58,8 @@ struct RecordingActionsMenu: View {
     let recording: Recording
     let coordinator: RecordingExportCoordinator
     var includeDelete = false
+    var textSizeOptions: [RecordingTextSizeOption] = []
+    var rename: (() -> Void)?
     var delete: (() -> Void)?
 
     private var hasOriginalCues: Bool { !recording.orderedCues.isEmpty }
@@ -50,6 +70,25 @@ struct RecordingActionsMenu: View {
 
     var body: some View {
         Menu {
+            if !textSizeOptions.isEmpty {
+                Menu("Tamaño del texto", systemImage: "textformat.size") {
+                    ForEach(textSizeOptions) { option in
+                        Button(action: option.select) {
+                            if option.isSelected {
+                                Label(option.title, systemImage: "checkmark")
+                            } else {
+                                Text(option.title)
+                            }
+                        }
+                    }
+                }
+                Divider()
+            }
+
+            if let rename {
+                Button(action: rename) { Label("Renombrar", systemImage: "pencil") }
+                Divider()
+            }
             Button {
                 coordinator.copyTranscript(recording)
             } label: {
@@ -67,6 +106,10 @@ struct RecordingActionsMenu: View {
 
             Divider()
 
+            Button { Task { await coordinator.prepareAll(recording) } } label: {
+                Label("Exportar todo", systemImage: "square.and.arrow.up.on.square")
+            }
+
             Button {
                 Task { await coordinator.prepare(.audio, recording: recording) }
             } label: {
@@ -76,14 +119,17 @@ struct RecordingActionsMenu: View {
             Menu("Exportar transcripción", systemImage: "doc.text") {
                 exportButton(.transcriptText)
                 exportButton(.transcriptSRT, disabled: !hasOriginalCues)
+                exportButton(.transcriptVTT, disabled: !hasOriginalCues)
             }
 
             if hasTranslation {
                 Menu("Exportar traducción", systemImage: "translate") {
                     exportButton(.translationText)
                     exportButton(.translationSRT)
+                    exportButton(.translationVTT)
                     exportButton(.bilingualText)
                     exportButton(.bilingualSRT, disabled: !hasOriginalCues)
+                    exportButton(.bilingualVTT, disabled: !hasOriginalCues)
                 }
             }
 
